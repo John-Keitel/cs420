@@ -1,28 +1,29 @@
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login } from "../../api/auth";
 
 export default function LoginScreen() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Missing fields", "Please enter both email and password.");
+      Alert.alert("Missing Fields", "Please enter both email and password.");
       return;
     }
 
     setLoading(true);
     try {
-      const token = await login(email, password);
+      const token = await login(email, password); // calls your backend API
       await AsyncStorage.setItem("authToken", token);
       router.push("/home");
-    } catch (error) {
-      Alert.alert("Login failed", error.message);
+    } catch (err) {
+      Alert.alert("Login Failed", err.message || "Unexpected error.");
     } finally {
       setLoading(false);
     }
@@ -31,21 +32,29 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
+
       <TextInput
         placeholder="Email"
         style={styles.input}
-        onChangeText={setEmail}
         value={email}
+        onChangeText={setEmail}
         autoCapitalize="none"
+        keyboardType="email-address"
       />
+
       <TextInput
         placeholder="Password"
         style={styles.input}
-        onChangeText={setPassword}
         value={password}
+        onChangeText={setPassword}
         secureTextEntry
       />
-      <Button title={loading ? "Logging in..." : "Login"} onPress={handleLogin} disabled={loading} />
+
+      {loading ? (
+        <ActivityIndicator size="large" />
+      ) : (
+        <Button title="Login" onPress={handleLogin} />
+      )}
     </View>
   );
 }
