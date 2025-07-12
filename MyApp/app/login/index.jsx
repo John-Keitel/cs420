@@ -1,15 +1,30 @@
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { login } from "../../api/auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = () => {
-    if (email && password) {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Missing fields", "Please enter both email and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = await login(email, password);
+      await AsyncStorage.setItem("authToken", token);
       router.push("/home");
+    } catch (error) {
+      Alert.alert("Login failed", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -21,15 +36,16 @@ export default function LoginScreen() {
         style={styles.input}
         onChangeText={setEmail}
         value={email}
+        autoCapitalize="none"
       />
       <TextInput
         placeholder="Password"
-        secureTextEntry
         style={styles.input}
         onChangeText={setPassword}
         value={password}
+        secureTextEntry
       />
-      <Button title="Login" onPress={handleLogin} />
+      <Button title={loading ? "Logging in..." : "Login"} onPress={handleLogin} disabled={loading} />
     </View>
   );
 }
